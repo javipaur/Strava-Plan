@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from 'react'
 
+type Step = 1 | 2 | 3
+
 type Stats = {
   activities: number
   distance: number
@@ -11,280 +13,277 @@ type Stats = {
   weeklyAvg: number
 }
 
-type SportType = 'running' | 'trail' | 'cycling' | 'swimming' | 'strength'
+const LEVELS = [
+  { id: 'principiante', title: 'Principiante', desc: 'Empiezas o <6 meses entrenando' },
+  { id: 'recreativo', title: 'Recreativo', desc: 'Corres sin plan estructurado' },
+  { id: 'intermedio', title: 'Intermedio', desc: 'Ya haces series y tiradas largas' },
+  { id: 'avanzado', title: 'Avanzado', desc: 'Entrenamiento serio y estructurado' },
+]
 
-export default function StravaForgeWizard() {
-  const [step, setStep] = useState<1 | 2 | 3>(1)
-  const [fileName, setFileName] = useState('')
+export default function StravaWizard() {
+  const [step, setStep] = useState<Step>(1)
+
   const [stats, setStats] = useState<Stats | null>(null)
+  const [fileName, setFileName] = useState('')
 
-  // GOAL FORM
   const [goal, setGoal] = useState('')
-  const [race, setRace] = useState('')
-  const [raceDate, setRaceDate] = useState('')
-  const [level, setLevel] = useState<'principiante' | 'intermedio' | 'avanzado' | 'competidor'>('intermedio')
+  const [level, setLevel] = useState('intermedio')
 
   const [days, setDays] = useState(4)
-  const [hours, setHours] = useState(6)
   const [duration, setDuration] = useState(12)
 
-  const [sports, setSports] = useState<SportType[]>(['running'])
-  const [injuries, setInjuries] = useState('')
-
-  const toggleSport = (s: SportType) => {
-    setSports(prev =>
-      prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]
-    )
-  }
-
-  /* ================= FILE ================= */
+  const [error, setError] = useState('')
 
   async function handleFile(file: File) {
+    setError('')
+
+    if (!file.name.includes('.csv')) {
+      setError('Por favor sube el archivo activities.csv de Strava')
+      return
+    }
+
     setFileName(file.name)
 
     const text = await file.text()
     const rows = text.split('\n').filter(Boolean)
+
+    if (rows.length < 10) {
+      setError('El archivo parece inválido o vacío')
+      return
+    }
 
     setStats({
       activities: rows.length,
       distance: Math.round(rows.length * 1.4),
       time: Math.round(rows.length * 0.6),
       longest: Math.round(rows.length / 5),
-      pace: '4:55 min/km',
+      pace: '4:55 /km',
       weeklyAvg: Math.round(rows.length / 10),
     })
 
     setStep(2)
   }
 
-  const canGoStep2 = !!fileName
-  const canGoStep3 =
-    goal.length > 2 &&
-    days > 0 &&
-    hours > 0 &&
-    duration > 0
-
-  /* ================= PROMPT ================= */
+  const canContinueStep2 =
+    goal.trim().length > 3 &&
+    stats !== null
 
   const prompt = useMemo(() => {
     return `
-Eres un coach profesional de endurance.
-
 ## ATLETA
 - Actividades: ${stats?.activities ?? 0}
 - Distancia: ${stats?.distance ?? 0} km
-- Tiempo: ${stats?.time ?? 0} h
-- Tirada larga: ${stats?.longest ?? 0} km
-- Ritmo: ${stats?.pace ?? 'N/A'}
-- Volumen semanal: ${stats?.weeklyAvg ?? 0} km
+- Volumen semanal: ${stats?.weeklyAvg ?? 0}
 
 ## OBJETIVO
-- Objetivo: ${goal}
-- Prueba: ${race}
-- Fecha: ${raceDate}
+- ${goal}
 - Nivel: ${level}
 - Días: ${days}
-- Horas/semana: ${hours}
-- Duración: ${duration} semanas
+- Duración: ${duration}
 
-## DEPORTES
-${sports.join(', ')}
-
-## LESIONES
-${injuries || 'ninguna'}
-
-## INSTRUCCIÓN
-Diseña plan profesional con periodización, progresión, sesiones detalladas y semanas completas.
+Crea un plan profesional estructurado y progresivo.
 `
-  }, [stats, goal, race, raceDate, level, days, hours, duration, sports, injuries])
+  }, [stats, goal, level, days, duration])
 
   function copy() {
     navigator.clipboard.writeText(prompt)
   }
 
-  /* ================= UI ================= */
-
   return (
-    <div className="page">
+    <div className="min-h-screen bg-[#F7F6F2] text-[#111] flex flex-col">
 
       {/* HEADER */}
-      <header className="siteHeader">
-        <div className="headerEyebrow">StravaForge AI Coach</div>
-        <h1 className="headerTitle">
-          Tu historial real.<br />
-          Un plan que no se inventa tu nivel.
-        </h1>
-        <p className="headerDesc">
-          Convierte tu Strava en un plan de entrenamiento inteligente basado en datos reales.
-        </p>
+      <header className="flex justify-between px-6 py-4 border-b bg-white">
+        <div>
+          <div className="font-bold">StravaForge</div>
+          <div className="text-xs text-gray-500">AI Training Engine</div>
+        </div>
+
+        <div className="text-xs text-gray-500">
+          🔒 Private · On-device
+        </div>
       </header>
 
-      {/* STEP 1 */}
-      <section className="step">
-        <div className="stepHead">
-          <span className="stepIndex">1</span>
-          <div>
-            <div className="stepTitle">Sube tu Strava CSV</div>
-            <div className="stepDesc">
-              Descárgalo desde Strava → Configuración → Descargar datos → activities.csv
-            </div>
-          </div>
+      {/* HERO */}
+      <div className="max-w-3xl mx-auto px-6 pt-10">
+        <div className="text-xs text-orange-600 uppercase tracking-widest">
+          Strava → AI Coach
         </div>
 
-        <div className="dropzone">
-          <input
-            type="file"
-            accept=".csv"
-            onChange={(e) => {
-              const f = e.target.files?.[0]
-              if (f) handleFile(f)
-            }}
-          />
+        <h1 className="text-4xl mt-2">
+          Tu historial real.
+          <br />
+          <span className="text-xl text-gray-600 font-normal">
+            Un plan que no se inventa tu nivel.
+          </span>
+        </h1>
 
-          <div className="dzIcon">📁</div>
-          <div className="dzMain">Arrastra tu archivo aquí</div>
-          <div className="dzSub">o haz click para seleccionar</div>
-
-          {!fileName && (
-            <div className="dzHelp">
-              ⚠️ Necesitas el archivo <b>activities.csv</b> para continuar
-            </div>
-          )}
-
-          {fileName && <p>✔ {fileName}</p>}
+        <div className="flex gap-6 mt-6 text-sm">
+          <Step n={1} active={step >= 1} label="Strava" />
+          <Step n={2} active={step >= 2} label="Objetivo" />
+          <Step n={3} active={step >= 3} label="Plan" />
         </div>
-      </section>
+      </div>
 
-      {/* STEP 2 */}
-      {step >= 2 && (
-        <section className="step">
-          <div className="stepHead">
-            <span className="stepIndex">2</span>
-            <div>
-              <div className="stepTitle">Tu objetivo</div>
-              <div className="stepDesc">Define qué quieres conseguir</div>
-            </div>
-          </div>
+      {/* BODY */}
+      <div className="max-w-3xl mx-auto px-6 mt-8 space-y-6 flex-1">
 
-          <div className="statsPanel">
+        {/* STEP 1 */}
+        {step === 1 && (
+          <Card title="Importa tu Strava">
 
-            {/* OBJETIVO */}
-            <label>🎯 Objetivo principal</label>
             <input
-              placeholder="Ej: Maratón sub 3h30"
+              type="file"
+              accept=".csv"
+              onChange={(e) => {
+                const f = e.target.files?.[0]
+                if (f) handleFile(f)
+              }}
+            />
+
+            {error && (
+              <div className="text-red-600 text-sm mt-2">
+                {error}
+              </div>
+            )}
+
+            <div className="mt-4 p-3 bg-white border rounded text-sm text-gray-600">
+              <b>¿Dónde descargo el CSV?</b>
+              <br />
+              Strava → Settings → My Account →
+              <b> Download or delete your data</b> →
+              solicita exportación → abre ZIP → usa <b>activities.csv</b>
+            </div>
+
+          </Card>
+        )}
+
+        {/* STEP 2 */}
+        {step >= 2 && (
+          <Card title="Tu objetivo">
+
+            {!stats && (
+              <div className="text-sm text-red-600">
+                ⚠️ Necesitas subir el archivo de Strava para continuar
+              </div>
+            )}
+
+            <input
+              className="w-full border p-2"
+              placeholder="Objetivo (ej: maratón sub 3h30)"
               value={goal}
-              onChange={e => setGoal(e.target.value)}
+              onChange={(e) => setGoal(e.target.value)}
             />
 
-            {/* PRUEBA */}
-            <label>🏁 Prueba objetivo</label>
-            <input
-              placeholder="Ej: Maratón de Valencia"
-              value={race}
-              onChange={e => setRace(e.target.value)}
-            />
-
-            {/* FECHA */}
-            <label>📅 Fecha de la prueba</label>
-            <input
-              type="date"
-              value={raceDate}
-              onChange={e => setRaceDate(e.target.value)}
-            />
-
-            {/* NIVEL */}
-            <label>📊 Nivel actual</label>
-            <select value={level} onChange={e => setLevel(e.target.value as any)}>
-              <option value="principiante">Principiante (empiezo o corro poco)</option>
-              <option value="intermedio">Intermedio (corro 2–4 días/semana)</option>
-              <option value="avanzado">Avanzado (entreno estructurado)</option>
-              <option value="competidor">Competidor (busco rendimiento)</option>
-            </select>
-
-            {/* VOLUMEN */}
-            <label>📆 Días de entrenamiento</label>
-            <input type="number" value={days} onChange={e => setDays(+e.target.value)} />
-
-            <label>⏱ Horas por semana</label>
-            <input type="number" value={hours} onChange={e => setHours(+e.target.value)} />
-
-            <label>📦 Duración del plan (semanas)</label>
-            <input type="number" value={duration} onChange={e => setDuration(+e.target.value)} />
-
-            {/* DEPORTES */}
-            <label>🏃‍♂️ Deportes</label>
-            <div className="goalPills">
-              {[
-                ['running', 'Carrera'],
-                ['trail', 'Trail'],
-                ['cycling', 'Ciclismo'],
-                ['swimming', 'Natación'],
-                ['strength', 'Fuerza'],
-              ].map(([key, label]) => (
-                <button
-                  key={key}
-                  className={sports.includes(key as SportType) ? 'goalOn' : 'goalPill'}
-                  onClick={() => toggleSport(key as SportType)}
-                >
-                  {label}
-                </button>
-              ))}
+            <div className="mt-4">
+              <div className="text-sm text-gray-600 mb-2">Nivel</div>
+              <div className="grid gap-2">
+                {LEVELS.map((l) => (
+                  <button
+                    key={l.id}
+                    onClick={() => setLevel(l.id)}
+                    className={`p-3 border rounded text-left ${
+                      level === l.id ? 'bg-black text-white' : 'bg-white'
+                    }`}
+                  >
+                    <div className="font-semibold">{l.title}</div>
+                    <div className="text-xs opacity-70">{l.desc}</div>
+                  </button>
+                ))}
+              </div>
             </div>
 
-            {/* LESIONES */}
-            <label>⚠️ Lesiones / notas</label>
-            <textarea
-              placeholder="Ej: rodilla sensible, sin impacto fuerte, etc."
-              value={injuries}
-              onChange={e => setInjuries(e.target.value)}
-            />
+            <div className="grid grid-cols-2 gap-3 mt-4">
+              <input
+                className="border p-2"
+                type="number"
+                value={days}
+                onChange={(e) => setDays(+e.target.value)}
+                placeholder="Días/semana"
+              />
+
+              <input
+                className="border p-2"
+                type="number"
+                value={duration}
+                onChange={(e) => setDuration(+e.target.value)}
+                placeholder="Semanas"
+              />
+            </div>
 
             <button
-              className="genBtn"
-              disabled={!canGoStep3}
+              disabled={!canContinueStep2}
               onClick={() => setStep(3)}
+              className={`w-full mt-4 py-3 rounded ${
+                canContinueStep2
+                  ? 'bg-black text-white'
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
             >
-              Generar prompt →
+              Generar plan →
             </button>
 
-          </div>
-        </section>
-      )}
+          </Card>
+        )}
 
-      {/* STEP 3 */}
-      {step === 3 && (
-        <section className="step">
-          <div className="stepHead">
-            <span className="stepIndex">3</span>
-            <div>
-              <div className="stepTitle">Tu prompt IA</div>
-              <div className="stepDesc">Cópialo en ChatGPT o Claude</div>
+        {/* STEP 3 */}
+        {step === 3 && (
+          <Card title="Tu prompt">
+
+            <textarea
+              className="w-full h-64 border p-3 text-sm"
+              value={prompt}
+              readOnly
+            />
+
+            <div className="flex gap-2 mt-3">
+              <button onClick={copy} className="border px-4 py-2">
+                Copiar
+              </button>
             </div>
-          </div>
 
-          <div className="statsPanel">
-            <textarea value={prompt} readOnly style={{ width: '100%', height: 240 }} />
+          </Card>
+        )}
 
-            <button className="genBtn" onClick={copy}>
-              Copiar prompt
-            </button>
-          </div>
-        </section>
-      )}
+      </div>
 
-      {/* FOOTER (RESPETADO) */}
-      <footer className="footer">
-        <span>© 2026 javipaurdev.</span>
-        <span>
-          Hecho con ❤️ para runners
+      {/* FOOTER */}
+      <footer className="flex justify-between px-6 py-5 border-t bg-white text-xs text-gray-500">
+        <span>© 2026 StravaForge</span>
+
+        <span className="flex items-center gap-1">
+          Hecho con
+          <svg className="w-3.5 h-3.5 text-red-500" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M6.979 3.074a6 6 0 0 1 4.988 1.425l.037 .033l.034 -.03a6 6 0 0 1 4.733 -1.44l.246 .036a6 6 0 0 1 3.364 10.008l-.18 .185l-.048 .041l-7.45 7.379a1 1 0 0 1 -1.313 .082l-.094 -.082l-7.493 -7.422a6 6 0 0 1 3.176 -10.215z"/>
+          </svg>
+          para runners
         </span>
+
         <span>Privacy-first</span>
       </footer>
 
-      {/* MINI HELP */}
-      <div style={{ fontSize: 12, color: '#777', marginTop: 20 }}>
-        💡 No sabes dónde descargar Strava CSV? Ve a: Settings → My Account → Download Data
+    </div>
+  )
+}
+
+/* ================= UI ================= */
+
+function Step({ n, active, label }: any) {
+  return (
+    <div className={`flex items-center gap-2 ${active ? '' : 'opacity-40'}`}>
+      <div className="w-6 h-6 rounded-full bg-black text-white text-xs flex items-center justify-center">
+        {n}
       </div>
+      <span>{label}</span>
+    </div>
+  )
+}
+
+function Card({ title, children }: any) {
+  return (
+    <div className="bg-white border rounded-xl p-5 space-y-4 shadow-sm">
+      <h2 className="font-semibold">{title}</h2>
+      {children}
     </div>
   )
 }
