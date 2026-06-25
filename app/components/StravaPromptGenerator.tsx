@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 
-/* ================= TYPES ================= */
+type Step = 1 | 2 | 3
 
 type Stats = {
   activities: number
@@ -13,134 +13,132 @@ type Stats = {
   weeklyAvg: number
 }
 
-/* ================= COMPONENT ================= */
+const LEVELS = [
+  { id: 'principiante', title: 'Principiante', desc: 'Empiezas o <6 meses entrenando' },
+  { id: 'recreativo', title: 'Recreativo', desc: 'Corres sin plan estructurado' },
+  { id: 'intermedio', title: 'Intermedio', desc: 'Ya haces series y tiradas largas' },
+  { id: 'avanzado', title: 'Avanzado', desc: 'Entrenamiento serio y estructurado' },
+]
 
-export default function StravaSaaS() {
-  const [step, setStep] = useState<1 | 2 | 3>(1)
-  const [fileName, setFileName] = useState('')
+export default function StravaWizard() {
+  const [step, setStep] = useState<Step>(1)
+
   const [stats, setStats] = useState<Stats | null>(null)
+  const [fileName, setFileName] = useState('')
 
   const [goal, setGoal] = useState('')
   const [level, setLevel] = useState('intermedio')
-  const [days, setDays] = useState('4')
-  const [duration, setDuration] = useState('12')
-  const [injuries, setInjuries] = useState('')
-  const [context, setContext] = useState('')
+
+  const [days, setDays] = useState(4)
+  const [duration, setDuration] = useState(12)
+
+  const [error, setError] = useState('')
 
   /* ================= FILE ================= */
 
   async function handleFile(file: File) {
+    setError('')
+
+    if (!file.name.includes('.csv')) {
+      setError('Por favor sube el archivo activities.csv de Strava')
+      return
+    }
+
     setFileName(file.name)
 
     const text = await file.text()
     const rows = text.split('\n').filter(Boolean)
 
+    if (rows.length < 10) {
+      setError('El archivo parece inválido o vacío')
+      return
+    }
+
     setStats({
       activities: rows.length,
-      distance: Math.round(rows.length * 1.3),
-      time: Math.round(rows.length * 0.5),
-      longest: Math.round(rows.length / 6),
-      pace: '4:50 min/km',
-      weeklyAvg: Math.round(rows.length / 12),
+      distance: Math.round(rows.length * 1.4),
+      time: Math.round(rows.length * 0.6),
+      longest: Math.round(rows.length / 5),
+      pace: '4:55 /km',
+      weeklyAvg: Math.round(rows.length / 10),
     })
 
     setStep(2)
   }
 
+  /* ================= VALIDATION STEP 2 ================= */
+
+  const canContinueStep2 =
+    goal.trim().length > 3 &&
+    stats !== null
+
   /* ================= PROMPT ================= */
 
   const prompt = useMemo(() => {
     return `
-Eres un coach profesional de running.
-
-## ATLETA (DATOS REALES)
+## ATLETA
 - Actividades: ${stats?.activities ?? 0}
 - Distancia: ${stats?.distance ?? 0} km
-- Tiempo: ${stats?.time ?? 0} h
-- Tirada más larga: ${stats?.longest ?? 0} km
-- Ritmo: ${stats?.pace ?? 'N/A'}
-- Volumen semanal: ${stats?.weeklyAvg ?? 0} km
+- Volumen semanal: ${stats?.weeklyAvg ?? 0}
 
 ## OBJETIVO
-- Objetivo: ${goal}
+- ${goal}
 - Nivel: ${level}
-- Días/semana: ${days}
-- Duración: ${duration} semanas
+- Días: ${days}
+- Duración: ${duration}
 
-## CONTEXTO
-- Lesiones: ${injuries || 'ninguna'}
-- Contexto: ${context || 'sin información'}
-
-## INSTRUCCIÓN
-Crea un plan profesional completo, progresivo, con:
-- periodización
-- semanas detalladas
-- sesiones estructuradas
-- progresión realista
+Crea un plan profesional estructurado y progresivo.
 `
-  }, [stats, goal, level, days, duration, injuries, context])
+  }, [stats, goal, level, days, duration])
 
   function copy() {
     navigator.clipboard.writeText(prompt)
   }
 
-  /* ================= UI ================= */
-
   return (
-    <div style={styles.app}>
+    <div className="min-h-screen bg-[#F7F6F2] text-[#111]">
 
-      {/* ================= TOP BAR ================= */}
-      <header style={styles.header}>
-        <div style={styles.brand}>
-          <div style={styles.logo}>🏃‍♂️</div>
-          <div>
-            <div style={styles.name}>StravaForge</div>
-            <div style={styles.tag}>AI Training Engine</div>
-          </div>
+      {/* HEADER */}
+      <header className="flex justify-between px-6 py-4 border-b bg-white">
+        <div>
+          <div className="font-bold">StravaForge</div>
+          <div className="text-xs text-gray-500">AI Training Engine</div>
         </div>
 
-        <div style={styles.badge}>
-          🔒 Private · On-device processing
+        <div className="text-xs text-gray-500">
+          🔒 Private · On-device
         </div>
       </header>
 
-      {/* ================= HERO ================= */}
-<section style={styles.hero}>
+      {/* HERO */}
+      <div className="max-w-3xl mx-auto px-6 pt-10">
+        <div className="text-xs text-orange-600 uppercase tracking-widest">
+          Strava → AI Coach
+        </div>
 
-  <div style={styles.kicker}>
-    Strava → Prompt de entrenamiento
-  </div>
+        <h1 className="text-4xl mt-2">
+          Tu historial real.
+          <br />
+          <span className="text-xl text-gray-600 font-normal">
+            Un plan que no se inventa tu nivel.
+          </span>
+        </h1>
 
-  <h1 style={styles.h1}>
-    Tu historial real.
-    <br />
-    <span style={{ color: '#111', fontWeight: 400 }}>
-      Un plan que no se inventa tu nivel.
-    </span>
-  </h1>
+        {/* STEPS */}
+        <div className="flex gap-6 mt-6 text-sm">
+          <Step n={1} active={step >= 1} label="Strava" />
+          <Step n={2} active={step >= 2} label="Objetivo" />
+          <Step n={3} active={step >= 3} label="Plan" />
+        </div>
+      </div>
 
-  <p style={styles.p}>
-    Convierte tu actividad de Strava en un plan de entrenamiento inteligente.
-    Basado en tus datos reales, no en estimaciones.
-  </p>
+      {/* BODY */}
+      <div className="max-w-3xl mx-auto px-6 mt-8 space-y-6">
 
-  {/* STEP INDICATOR (mantienes el tuyo) */}
-  <div style={styles.steps}>
-    <Step n={1} active={step >= 1} label="Importar Strava" />
-    <Step n={2} active={step >= 2} label="Objetivo" />
-    <Step n={3} active={step >= 3} label="Generar plan" />
-  </div>
+        {/* STEP 1 */}
+        {step === 1 && (
+          <Card title="Importa tu Strava">
 
-</section>
-
-      {/* ================= MAIN GRID ================= */}
-      <main style={styles.grid}>
-
-        {/* LEFT */}
-        <div style={styles.left}>
-
-          {/* STEP 1 */}
-          <Card active={step === 1} title="Sube tu Strava">
             <input
               type="file"
               accept=".csv"
@@ -150,277 +148,145 @@ Crea un plan profesional completo, progresivo, con:
               }}
             />
 
-            {fileName && <p>📁 {fileName}</p>}
-
-            <button onClick={() => setStep(2)} style={styles.btn}>
-              Continuar →
-            </button>
-          </Card>
-
-          {/* STEP 2 */}
-          {step >= 2 && (
-            <Card active={step === 2} title="Tu objetivo">
-
-              <input
-                placeholder="Objetivo (ej: maratón sub 3h30)"
-                value={goal}
-                onChange={(e) => setGoal(e.target.value)}
-              />
-
-              <select value={level} onChange={(e) => setLevel(e.target.value)}>
-                <option>principiante</option>
-                <option>intermedio</option>
-                <option>avanzado</option>
-              </select>
-
-              <select value={days} onChange={(e) => setDays(e.target.value)}>
-                <option value="3">3 días</option>
-                <option value="4">4 días</option>
-                <option value="5">5 días</option>
-              </select>
-
-              <select value={duration} onChange={(e) => setDuration(e.target.value)}>
-                <option value="8">8 semanas</option>
-                <option value="12">12 semanas</option>
-                <option value="16">16 semanas</option>
-              </select>
-
-              <input
-                placeholder="Lesiones"
-                value={injuries}
-                onChange={(e) => setInjuries(e.target.value)}
-              />
-
-              <textarea
-                placeholder="Contexto adicional"
-                value={context}
-                onChange={(e) => setContext(e.target.value)}
-              />
-
-              <button onClick={() => setStep(3)} style={styles.primary}>
-                Generar plan →
-              </button>
-            </Card>
-          )}
-
-          {/* STEP 3 */}
-          {step >= 3 && (
-            <Card active={true} title="Tu prompt">
-
-              <textarea
-                value={prompt}
-                readOnly
-                style={styles.textarea}
-              />
-
-              <div style={styles.row}>
-                <button onClick={copy} style={styles.btn}>
-                  Copiar
-                </button>
-
-                <button
-                  onClick={() =>
-                    window.open(
-                      'https://chat.openai.com/?q=' + encodeURIComponent(prompt),
-                      '_blank'
-                    )
-                  }
-                  style={styles.btn}
-                >
-                  ChatGPT
-                </button>
+            {/* ERROR */}
+            {error && (
+              <div className="text-red-600 text-sm mt-2">
+                {error}
               </div>
+            )}
 
-            </Card>
-          )}
-        </div>
+            {/* HELP BOX */}
+            <div className="mt-4 p-3 bg-white border rounded text-sm text-gray-600">
+              <b>¿Dónde descargo el CSV?</b>
+              <br />
+              Strava → Settings → My Account →
+              <b> Download or delete your data</b> →
+              solicita exportación → abre ZIP → usa <b>activities.csv</b>
+            </div>
 
-        {/* RIGHT SIDEBAR (SAAS STYLE INSIGHTS) */}
-        <aside style={styles.right}>
-          <Panel title="Insights">
-            <Stat label="Actividades" value={stats?.activities ?? 0} />
-            <Stat label="Distancia" value={stats?.distance ?? 0 + ' km'} />
-            <Stat label="Ritmo" value={stats?.pace ?? '—'} />
-            <Stat label="Volumen semanal" value={stats?.weeklyAvg ?? 0 + ' km'} />
-          </Panel>
+          </Card>
+        )}
 
-          <Panel title="Cómo funciona">
-            <p style={{ fontSize: 13, opacity: 0.7 }}>
-              1. Subes Strava<br />
-              2. Definimos objetivo<br />
-              3. Generamos prompt IA<br />
-              4. Pegas en ChatGPT
-            </p>
-          </Panel>
+        {/* STEP 2 */}
+        {step >= 2 && (
+          <Card title="Tu objetivo">
 
-          <Panel title="Privacidad">
-            <p style={{ fontSize: 13, opacity: 0.7 }}>
-              Todo se procesa en tu navegador. No enviamos datos a servidores.
-            </p>
-          </Panel>
-        </aside>
+            {/* STATS CHECK */}
+            {!stats && (
+              <div className="text-sm text-red-600">
+                ⚠️ Necesitas subir el archivo de Strava para continuar
+              </div>
+            )}
 
-      </main>
+            <input
+              className="w-full border p-2"
+              placeholder="Objetivo (ej: maratón sub 3h30)"
+              value={goal}
+              onChange={(e) => setGoal(e.target.value)}
+            />
 
-      {/* ================= FOOTER ================= */}
-      <footer style={styles.footer}>
-        <span>© 2026 javipaurdev.</span>
-        <span> Hecho con 
-            <svg className="size-3.5 text-red-500 inline" aria-label="amor" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M6.979 3.074a6 6 0 0 1 4.988 1.425l.037 .033l.034 -.03a6 6 0 0 1 4.733 -1.44l.246 .036a6 6 0 0 1 3.364 10.008l-.18 .185l-.048 .041l-7.45 7.379a1 1 0 0 1 -1.313 .082l-.094 -.082l-7.493 -7.422a6 6 0 0 1 3.176 -10.215z"></path>
-            </svg> 
-            para runners</span>
-        <span>Privacy-first</span>
-      </footer>
+            {/* LEVEL */}
+            <div className="mt-4">
+              <div className="text-sm text-gray-600 mb-2">Nivel</div>
+              <div className="grid gap-2">
+                {LEVELS.map((l) => (
+                  <button
+                    key={l.id}
+                    onClick={() => setLevel(l.id)}
+                    className={`p-3 border rounded text-left ${
+                      level === l.id ? 'bg-black text-white' : 'bg-white'
+                    }`}
+                  >
+                    <div className="font-semibold">{l.title}</div>
+                    <div className="text-xs opacity-70">{l.desc}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* INPUTS */}
+            <div className="grid grid-cols-2 gap-3 mt-4">
+              <input
+                className="border p-2"
+                type="number"
+                value={days}
+                onChange={(e) => setDays(+e.target.value)}
+                placeholder="Días/semana"
+              />
+
+              <input
+                className="border p-2"
+                type="number"
+                value={duration}
+                onChange={(e) => setDuration(+e.target.value)}
+                placeholder="Semanas"
+              />
+            </div>
+
+            {/* BUTTON */}
+            <button
+              disabled={!canContinueStep2}
+              onClick={() => setStep(3)}
+              className={`w-full mt-4 py-3 rounded ${
+                canContinueStep2
+                  ? 'bg-black text-white'
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
+            >
+              Generar plan →
+            </button>
+
+            {!canContinueStep2 && (
+              <div className="text-xs text-gray-500 mt-2">
+                Completa objetivo + datos de Strava para continuar
+              </div>
+            )}
+
+          </Card>
+        )}
+
+        {/* STEP 3 */}
+        {step === 3 && (
+          <Card title="Tu prompt">
+
+            <textarea
+              className="w-full h-64 border p-3 text-sm"
+              value={prompt}
+              readOnly
+            />
+
+            <div className="flex gap-2 mt-3">
+              <button onClick={copy} className="border px-4 py-2">
+                Copiar
+              </button>
+            </div>
+
+          </Card>
+        )}
+
+      </div>
     </div>
   )
 }
 
-/* ================= UI COMPONENTS ================= */
+/* ================= UI ================= */
 
 function Step({ n, active, label }: any) {
   return (
-    <div style={{
-      display: 'flex',
-      gap: 8,
-      alignItems: 'center',
-      opacity: active ? 1 : 0.4
-    }}>
-      <div style={{
-        width: 24,
-        height: 24,
-        borderRadius: 12,
-        background: active ? '#111' : '#ccc',
-        color: '#fff',
-        fontSize: 12,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center'
-      }}>
+    <div className={`flex items-center gap-2 ${active ? '' : 'opacity-40'}`}>
+      <div className="w-6 h-6 rounded-full bg-black text-white text-xs flex items-center justify-center">
         {n}
       </div>
-      <span style={{ fontSize: 13 }}>{label}</span>
+      <span>{label}</span>
     </div>
   )
 }
 
-function Card({ title, children, active }: any) {
+function Card({ title, children }: any) {
   return (
-    <div style={{
-      border: '1px solid #e5e5e5',
-      borderRadius: 12,
-      padding: 16,
-      background: active ? '#fff' : '#fafafa',
-      display: 'flex',
-      flexDirection: 'column',
-      gap: 10
-    }}>
-      <h3 style={{ margin: 0 }}>{title}</h3>
+    <div className="bg-white border rounded-xl p-5 space-y-4 shadow-sm">
+      <h2 className="font-semibold">{title}</h2>
       {children}
     </div>
   )
-}
-
-function Panel({ title, children }: any) {
-  return (
-    <div style={{
-      border: '1px solid #eee',
-      borderRadius: 12,
-      padding: 14,
-      marginBottom: 12,
-      background: '#fff'
-    }}>
-      <h4 style={{ marginBottom: 10 }}>{title}</h4>
-      {children}
-    </div>
-  )
-}
-
-function Stat({ label, value }: any) {
-  return (
-    <div style={{ marginBottom: 10 }}>
-      <div style={{ fontSize: 12, opacity: 0.6 }}>{label}</div>
-      <div style={{ fontWeight: 600 }}>{value}</div>
-    </div>
-  )
-}
-
-/* ================= STYLES ================= */
-
-const styles: any = {
-  app: { fontFamily: 'system-ui', background: '#f6f6f6', minHeight: '100vh' },
-
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    padding: 16,
-    borderBottom: '1px solid #eee',
-    background: '#fff',
-  },
-
-  brand: { display: 'flex', gap: 10, alignItems: 'center' },
-  logo: { fontSize: 22 },
-  name: { fontWeight: 700 },
-  tag: { fontSize: 12, opacity: 0.6 },
-
-  badge: { fontSize: 12, opacity: 0.6 },
-
-  hero: { padding: 24, maxWidth: 900, margin: '0 auto' },
-
-  h1: { fontSize: 30, marginBottom: 8 },
-  p: { opacity: 0.7 },
-
-  steps: { display: 'flex', gap: 16, marginTop: 20 },
-
-  grid: {
-    display: 'grid',
-    gridTemplateColumns: '2fr 1fr',
-    gap: 20,
-    maxWidth: 1100,
-    margin: '0 auto',
-    padding: 24,
-  },
-
-  left: { display: 'flex', flexDirection: 'column', gap: 16 },
-
-  right: {},
-
-  btn: {
-    padding: 10,
-    border: '1px solid #ddd',
-    background: '#fff',
-    cursor: 'pointer',
-    borderRadius: 8,
-  },
-
-  primary: {
-    padding: 12,
-    background: '#111',
-    color: '#fff',
-    borderRadius: 10,
-    border: 'none',
-    cursor: 'pointer',
-  },
-
-  textarea: { width: '100%', height: 200 },
-
-  row: { display: 'flex', gap: 10 },
-
-  footer: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    padding: 20,
-    borderTop: '1px solid #eee',
-    fontSize: 12,
-    opacity: 0.6,
-    background: '#fff',
-  },
-  kicker: {
-  fontSize: 12,
-  letterSpacing: 1.2,
-  textTransform: 'uppercase',
-  opacity: 0.6,
-  marginBottom: 10,
-  fontWeight: 600,
-}
 }

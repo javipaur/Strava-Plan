@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -21,6 +21,9 @@ export const metadata: Metadata = {
   },
   description:
     "Convierte tu actividad de Strava en un plan de entrenamiento inteligente. Basado en tus datos reales, no en estimaciones.",
+
+  applicationName: "StravaForge",
+
   keywords: [
     "strava",
     "running",
@@ -31,9 +34,15 @@ export const metadata: Metadata = {
     "maratón",
     "trail running",
   ],
+
   authors: [{ name: "StravaForge" }],
   creator: "StravaForge",
+
   metadataBase: new URL("https://stravaforge.com"),
+
+  alternates: {
+    canonical: "https://stravaforge.com",
+  },
 
   openGraph: {
     title: "StravaForge — AI Running Coach",
@@ -53,16 +62,17 @@ export const metadata: Metadata = {
     creator: "@stravaforge",
   },
 
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-    maximumScale: 1,
-  },
+  themeColor: "#F7F6F2",
 
   robots: {
     index: true,
     follow: true,
   },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({
@@ -75,7 +85,7 @@ export default function RootLayout({
       lang="es"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-[#F7F6F2] text-[#111]">
+      <body className="min-h-full flex flex-col bg-[#F7F6F2] text-[#111] antialiased">
         {children}
       </body>
     </html>

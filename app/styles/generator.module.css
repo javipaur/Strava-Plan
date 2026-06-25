@@ -1,167 +1,234 @@
-.page{
-max-width:720px;
-margin:auto;
-padding:24px;
-background:#F7F6F2;
-min-height:100vh;
+:root {
+  --bg: #F7F6F2;
+  --surface: #FFFFFF;
+  --text: #121212;
+  --muted: #6B6B6B;
+  --soft: #9A9A9A;
+  --border: rgba(0,0,0,0.08);
+  --accent: #FC4C02; /* Strava orange real */
+  --accent-soft: rgba(252, 76, 2, 0.08);
+
+  --radius-sm: 10px;
+  --radius: 14px;
+  --radius-lg: 18px;
+
+  --shadow-sm: 0 2px 10px rgba(0,0,0,0.04);
+  --shadow-md: 0 8px 24px rgba(0,0,0,0.08);
+
+  --transition: 0.18s ease;
 }
 
-.siteHeader{
-padding:40px 0;
+/* ================= PAGE ================= */
+.page {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 32px 20px 80px;
+  background: var(--bg);
+  min-height: 100vh;
+  font-family: system-ui, -apple-system, sans-serif;
+  color: var(--text);
 }
 
-.headerEyebrow{
-color:#E84B1A;
-font-size:11px;
+/* ================= HEADER ================= */
+.siteHeader {
+  padding: 56px 0 36px;
 }
 
-.headerTitle{
-font-size:42px;
-line-height:1.2;
+.headerEyebrow {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 700;
 }
 
-.headerDesc{
-color:#666;
+.headerTitle {
+  font-size: 46px;
+  line-height: 1.05;
+  font-weight: 800;
+  margin-top: 14px;
+  letter-spacing: -0.03em;
 }
 
-.step{
-margin-top:40px;
+.headerDesc {
+  margin-top: 14px;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.6;
+  max-width: 580px;
 }
 
-.stepHead{
-display:flex;
-gap:12px;
+/* ================= STEP ================= */
+.step {
+  margin-top: 48px;
 }
 
-.stepIndex{
-color:#999;
+.stepHead {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
 }
 
-.stepTitle{
-font-size:18px;
-font-weight:600;
+.stepIndex {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--soft);
+  margin-top: 4px;
 }
 
-.stepDesc{
-color:#777;
+.stepTitle {
+  font-size: 18px;
+  font-weight: 700;
 }
 
-.dropzone{
-
-padding:50px;
-
-background:white;
-
-border-radius:12px;
-
-border:2px dashed #ddd;
-
-text-align:center;
-
-position:relative;
-
+.stepDesc {
+  font-size: 14px;
+  color: var(--muted);
+  margin-top: 4px;
 }
 
-.dropzone input{
-
-position:absolute;
-
-inset:0;
-
-opacity:0;
-
-cursor:pointer;
-
+/* ================= DROPZONE (STRAVA CARD STYLE) ================= */
+.dropzone {
+  margin-top: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 60px 24px;
+  text-align: center;
+  position: relative;
+  cursor: pointer;
+  transition: all var(--transition);
+  box-shadow: var(--shadow-sm);
 }
 
-.dzIcon{
-font-size:32px;
+.dropzone:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--accent);
 }
 
-.dzMain{
-font-size:18px;
+.dropzone input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
 }
 
-.dzSub{
-color:#777;
+.dzIcon {
+  font-size: 38px;
+  margin-bottom: 12px;
 }
 
-.statsPanel{
-
-margin-top:20px;
-
-background:white;
-
-border-radius:12px;
-
-padding:20px;
-
+.dzMain {
+  font-size: 16px;
+  font-weight: 600;
 }
 
-.statsGrid{
-display:grid;
+.dzSub {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 6px;
 }
 
-.statCell{
-padding:10px;
+/* ================= STATS PANEL (STRAVA CARDS) ================= */
+.statsPanel {
+  margin-top: 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 18px;
+  box-shadow: var(--shadow-sm);
 }
 
-.statLabel{
-font-size:12px;
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
 }
 
-.statValue{
-font-size:30px;
+.statCell {
+  background: #FAFAFA;
+  border-radius: var(--radius);
+  padding: 14px;
+  transition: var(--transition);
 }
 
-.goalPills{
-display:flex;
-gap:10px;
+.statCell:hover {
+  background: var(--accent-soft);
+  transform: translateY(-1px);
 }
 
-.goalPill{
-
-padding:10px 18px;
-
-border-radius:30px;
-
-border:1px solid #ccc;
-
+.statLabel {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--soft);
 }
 
-.goalOn{
-
-padding:10px 18px;
-
-background:#E84B1A;
-
-color:white;
-
-border:none;
-
-border-radius:30px;
-
+.statValue {
+  font-size: 28px;
+  font-weight: 800;
+  margin-top: 6px;
+  color: var(--text);
 }
 
-.genBtn{
-
-width:100%;
-
-padding:18px;
-
-background:#E84B1A;
-
-color:white;
-
-border:none;
-
-border-radius:12px;
-
-font-size:18px;
-
+/* ================= PILLS (STRAVA STYLE FILTERS) ================= */
+.goalPills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
 }
 
-.divider{
-margin:40px 0;
+.goalPill {
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-size: 13px;
+  cursor: pointer;
+  transition: var(--transition);
+  font-weight: 500;
 }
 
+.goalPill:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-soft);
+  transform: translateY(-1px);
+}
+
+.goalOn {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}
+
+/* ================= BUTTON (STRAVA CTA) ================= */
+.genBtn {
+  width: 100%;
+  margin-top: 24px;
+  padding: 16px;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: var(--radius-lg);
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition);
+  box-shadow: 0 8px 20px rgba(252, 76, 2, 0.25);
+}
+
+.genBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(252, 76, 2, 0.35);
+}
+
+/* ================= DIVIDER ================= */
+.divider {
+  margin: 52px 0;
+  border: none;
+  border-top: 1px solid var(--border);
+}
