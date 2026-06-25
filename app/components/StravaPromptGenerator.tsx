@@ -489,6 +489,156 @@ setTrailDplus(+e.target.value)
 
 )}
 
+{/* CYCLING */}
+
+{sports.includes('cycling') && (
+
+<div className="mt-5 border rounded-xl p-4 bg-blue-50">
+
+<div className="font-semibold mb-4">
+🚴 Configuración Ciclismo
+</div>
+
+<select className="w-full border p-3 rounded">
+
+<option>
+Ruta
+</option>
+
+<option>
+MTB
+</option>
+
+<option>
+Gravel
+</option>
+
+<option>
+Contrarreloj
+</option>
+
+</select>
+
+<div className="grid grid-cols-2 gap-3 mt-4">
+
+<input
+type="number"
+className="border p-3 rounded"
+placeholder="Distancia objetivo (km)"
+/>
+
+<input
+type="number"
+className="border p-3 rounded"
+placeholder="Desnivel objetivo (m)"
+/>
+
+</div>
+
+<input
+className="w-full border p-3 rounded mt-3"
+placeholder="Horas máximas salida larga"
+/>
+
+</div>
+
+)}
+
+{/* SWIMMING */}
+
+{sports.includes('swimming') && (
+
+<div className="mt-5 border rounded-xl p-4 bg-cyan-50">
+
+<div className="font-semibold mb-4">
+🏊 Configuración Natación
+</div>
+
+<select className="w-full border p-3 rounded">
+
+<option>
+Piscina
+</option>
+
+<option>
+Aguas abiertas
+</option>
+
+<option>
+Triatlón
+</option>
+
+</select>
+
+<input
+className="w-full border p-3 rounded mt-3"
+placeholder="Distancia objetivo"
+/>
+
+<input
+className="w-full border p-3 rounded mt-3"
+placeholder="Ritmo objetivo por 100m"
+/>
+
+</div>
+
+)}
+
+{/* STRENGTH */}
+
+{sports.includes('strength') && (
+
+<div className="mt-5 border rounded-xl p-4 bg-orange-50">
+
+<div className="font-semibold mb-4">
+🏋️ Configuración Fuerza
+</div>
+
+<select className="w-full border p-3 rounded">
+
+<option>
+Prevención lesiones
+</option>
+
+<option>
+Rendimiento
+</option>
+
+<option>
+Hipertrofia
+</option>
+
+</select>
+
+<select className="w-full border p-3 rounded mt-3">
+
+<option>
+Gimnasio completo
+</option>
+
+<option>
+Casa
+</option>
+
+<option>
+Bandas
+</option>
+
+<option>
+Mancuernas
+</option>
+
+</select>
+
+<input
+className="w-full border p-3 rounded mt-3"
+placeholder="Minutos por sesión"
+/>
+
+</div>
+
+)}
+
 {/* PLAN */}
 
 <div className="grid grid-cols-2 gap-3 mt-5">
