@@ -168,6 +168,14 @@ Crea un plan profesional tipo entrenador olímpico.
     navigator.clipboard.writeText(prompt)
   }
 
+  function copyPrompt() {
+  navigator.clipboard.writeText(prompt)
+}
+
+function openChatGPT() {
+  const encoded = encodeURIComponent(prompt)
+  window.open(`https://chat.openai.com/?q=${encoded}`, '_blank')
+}
   return (
     <div className="min-h-screen bg-[#F7F6F2] text-[#111] flex flex-col">
 
@@ -231,7 +239,7 @@ Crea un plan profesional tipo entrenador olímpico.
 
        {/* STEP 2 */}
 {step >= 2 && (
-<Card title="Objetivo PRO">
+<Card title="Objetivo">
 
 <div className="p-3 bg-green-50 border rounded text-sm">
 Nivel detectado: <b>{autoLevel}</b>
@@ -714,24 +722,35 @@ Generar plan →
 
 </Card>
 )}
+{step === 3 && (
+  <Card title="Tu Prompt">
 
-        {/* STEP 3 */}
-        {step === 3 && (
-          <Card title="Prompt IA">
+    <textarea
+      className="w-full h-64 border p-2 text-sm"
+      value={prompt}
+      readOnly
+    />
 
-            <textarea
-              className="w-full h-64 border p-2"
-              value={prompt}
-              readOnly
-            />
+    <div className="flex gap-3 mt-3">
 
-            <button onClick={copy} className="mt-3 border px-4 py-2">
-              Copiar
-            </button>
+      <button
+        onClick={copyPrompt}
+        className="flex-1 border px-4 py-2 rounded bg-white"
+      >
+        📋 Copiar prompt
+      </button>
 
-          </Card>
-        )}
+      <button
+        onClick={openChatGPT}
+        className="flex-1 bg-black text-white px-4 py-2 rounded"
+      >
+        🚀 Abrir ChatGPT
+      </button>
 
+    </div>
+
+  </Card>
+)}
       </div>
 
       {/* FOOTER (UNCHANGED) */}
