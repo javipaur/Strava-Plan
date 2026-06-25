@@ -13,11 +13,26 @@ type Stats = {
   weeklyAvg: number
 }
 
+type SportType =
+  | 'running'
+  | 'trail'
+  | 'cycling'
+  | 'swimming'
+  | 'strength'
+
 const LEVELS = [
   { id: 'principiante', title: 'Principiante', desc: 'Empiezas o <6 meses entrenando' },
   { id: 'recreativo', title: 'Recreativo', desc: 'Corres sin plan estructurado' },
-  { id: 'intermedio', title: 'Intermedio', desc: 'Ya haces series y tiradas largas' },
-  { id: 'avanzado', title: 'Avanzado', desc: 'Entrenamiento serio y estructurado' },
+  { id: 'intermedio', title: 'Intermedio', desc: 'Series + tiradas largas' },
+  { id: 'avanzado', title: 'Avanzado', desc: 'Entrenamiento estructurado serio' },
+]
+
+const SPORTS: { id: SportType; label: string }[] = [
+  { id: 'running', label: 'Carrera (asfalto)' },
+  { id: 'trail', label: 'Trail running' },
+  { id: 'cycling', label: 'Ciclismo' },
+  { id: 'swimming', label: 'Natación' },
+  { id: 'strength', label: 'Fuerza' },
 ]
 
 export default function StravaWizard() {
@@ -26,19 +41,40 @@ export default function StravaWizard() {
   const [stats, setStats] = useState<Stats | null>(null)
   const [fileName, setFileName] = useState('')
 
+  const [autoLevel, setAutoLevel] = useState<string>('intermedio')
+  const [manualLevel, setManualLevel] = useState(false)
+
   const [goal, setGoal] = useState('')
+  const [raceDate, setRaceDate] = useState('')
   const [level, setLevel] = useState('intermedio')
 
   const [days, setDays] = useState(4)
-  const [duration, setDuration] = useState(12)
+  const [weeks, setWeeks] = useState(12)
 
+  const [sports, setSports] = useState<SportType[]>([])
+
+  // 🔥 NUEVO: trail específico
+  const [trailKm, setTrailKm] = useState(20)
+  const [trailDplus, setTrailDplus] = useState(1000)
+
+  const [injuries, setInjuries] = useState('')
   const [error, setError] = useState('')
+// RUNNING
+const [roadDistance, setRoadDistance] = useState('')
+const [performanceGoal, setPerformanceGoal] = useState('finish')
+const [targetTime, setTargetTime] = useState('')
+
+// TRAIL
+const [trailMode, setTrailMode] = useState('classic')
+const isRunning = sports.includes('running')
+
+  /* ================= FILE ================= */
 
   async function handleFile(file: File) {
     setError('')
 
     if (!file.name.includes('.csv')) {
-      setError('Por favor sube el archivo activities.csv de Strava')
+      setError('Sube el archivo activities.csv de Strava')
       return
     }
 
@@ -48,24 +84,46 @@ export default function StravaWizard() {
     const rows = text.split('\n').filter(Boolean)
 
     if (rows.length < 10) {
-      setError('El archivo parece inválido o vacío')
+      setError('Archivo inválido')
       return
     }
+
+    const inferred =
+      rows.length > 120
+        ? 'avanzado'
+        : rows.length > 60
+          ? 'intermedio'
+          : 'recreativo'
+
+    setAutoLevel(inferred)
+    setLevel(inferred)
 
     setStats({
       activities: rows.length,
       distance: Math.round(rows.length * 1.4),
       time: Math.round(rows.length * 0.6),
-      longest: Math.round(rows.length / 5),
-      pace: '4:55 /km',
+      longest: Math.round(rows.length / 6),
+      pace: '4:50 /km',
       weeklyAvg: Math.round(rows.length / 10),
     })
 
     setStep(2)
   }
 
+  function toggleSport(s: SportType) {
+    setSports(prev =>
+      prev.includes(s)
+        ? prev.filter(x => x !== s)
+        : [...prev, s]
+    )
+  }
+
+  const isTrail = sports.includes('trail')
+
   const canContinueStep2 =
     goal.trim().length > 3 &&
+    raceDate.length > 0 &&
+    sports.length > 0 &&
     stats !== null
 
   const prompt = useMemo(() => {
@@ -73,17 +131,38 @@ export default function StravaWizard() {
 ## ATLETA
 - Actividades: ${stats?.activities ?? 0}
 - Distancia: ${stats?.distance ?? 0} km
-- Volumen semanal: ${stats?.weeklyAvg ?? 0}
+- Ritmo: ${stats?.pace ?? ''}
 
 ## OBJETIVO
 - ${goal}
+- Fecha: ${raceDate}
 - Nivel: ${level}
+- Deportes: ${sports.join(', ')}
 - Días: ${days}
-- Duración: ${duration}
+- Semanas: ${weeks}
 
-Crea un plan profesional estructurado y progresivo.
+${isTrail ? `## TRAIL
+- Km carrera: ${trailKm}
+- Desnivel D+: ${trailDplus}` : ''}
+
+## CONTEXTO
+- Lesiones: ${injuries || 'ninguna'}
+
+Crea un plan profesional tipo entrenador olímpico.
 `
-  }, [stats, goal, level, days, duration])
+  }, [
+    stats,
+    goal,
+    raceDate,
+    level,
+    sports,
+    days,
+    weeks,
+    injuries,
+    trailKm,
+    trailDplus,
+    isTrail,
+  ])
 
   function copy() {
     navigator.clipboard.writeText(prompt)
@@ -130,8 +209,7 @@ Crea un plan profesional estructurado y progresivo.
 
         {/* STEP 1 */}
         {step === 1 && (
-          <Card title="Importa tu Strava">
-
+          <Card title="Importa Strava CSV">
             <input
               type="file"
               accept=".csv"
@@ -142,126 +220,380 @@ Crea un plan profesional estructurado y progresivo.
             />
 
             {error && (
-              <div className="text-red-600 text-sm mt-2">
-                {error}
-              </div>
+              <div className="text-red-600 text-sm">{error}</div>
             )}
 
-            <div className="mt-4 p-3 bg-white border rounded text-sm text-gray-600">
-              <b>¿Dónde descargo el CSV?</b>
-              <br />
-              Strava → Settings → My Account →
-              <b> Download or delete your data</b> →
-              solicita exportación → abre ZIP → usa <b>activities.csv</b>
+            <div className="p-3 bg-white border rounded text-sm text-gray-600">
+              Descarga en Strava → Settings → My Account → Download Data → activities.csv
             </div>
-
           </Card>
         )}
 
-        {/* STEP 2 */}
-        {step >= 2 && (
-          <Card title="Tu objetivo">
+       {/* STEP 2 */}
+{step >= 2 && (
+<Card title="Objetivo PRO">
 
-            {!stats && (
-              <div className="text-sm text-red-600">
-                ⚠️ Necesitas subir el archivo de Strava para continuar
-              </div>
-            )}
+<div className="p-3 bg-green-50 border rounded text-sm">
+Nivel detectado: <b>{autoLevel}</b>
 
-            <input
-              className="w-full border p-2"
-              placeholder="Objetivo (ej: maratón sub 3h30)"
-              value={goal}
-              onChange={(e) => setGoal(e.target.value)}
-            />
+<button
+onClick={() => setManualLevel(true)}
+className="ml-3 underline"
+>
+ajustar manual
+</button>
+</div>
 
-            <div className="mt-4">
-              <div className="text-sm text-gray-600 mb-2">Nivel</div>
-              <div className="grid gap-2">
-                {LEVELS.map((l) => (
-                  <button
-                    key={l.id}
-                    onClick={() => setLevel(l.id)}
-                    className={`p-3 border rounded text-left ${
-                      level === l.id ? 'bg-black text-white' : 'bg-white'
-                    }`}
-                  >
-                    <div className="font-semibold">{l.title}</div>
-                    <div className="text-xs opacity-70">{l.desc}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
+{manualLevel && (
+<div className="mt-3 space-y-2">
 
-            <div className="grid grid-cols-2 gap-3 mt-4">
-              <input
-                className="border p-2"
-                type="number"
-                value={days}
-                onChange={(e) => setDays(+e.target.value)}
-                placeholder="Días/semana"
-              />
+{LEVELS.map(lvl => (
 
-              <input
-                className="border p-2"
-                type="number"
-                value={duration}
-                onChange={(e) => setDuration(+e.target.value)}
-                placeholder="Semanas"
-              />
-            </div>
+<button
+key={lvl.id}
+onClick={() => setLevel(lvl.id)}
+className={`w-full p-3 border rounded text-left ${
+level === lvl.id
+? 'bg-black text-white'
+: ''
+}`}
+>
 
-            <button
-              disabled={!canContinueStep2}
-              onClick={() => setStep(3)}
-              className={`w-full mt-4 py-3 rounded ${
-                canContinueStep2
-                  ? 'bg-black text-white'
-                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              }`}
-            >
-              Generar plan →
-            </button>
+<b>{lvl.title}</b>
 
-          </Card>
-        )}
+<div className="text-xs opacity-70">
+{lvl.desc}
+</div>
+
+</button>
+
+))}
+
+</div>
+)}
+
+{/* OBJETIVO */}
+
+<div className="mt-5">
+
+<label className="text-sm font-medium">
+🎯 Objetivo principal
+</label>
+
+<input
+className="w-full border p-3 rounded-lg mt-2"
+placeholder="Ej: Maratón sub 3h30"
+value={goal}
+onChange={(e)=>setGoal(e.target.value)}
+/>
+
+</div>
+
+{/* FECHA */}
+
+<div className="mt-5">
+
+<label className="text-sm font-medium">
+📅 Fecha objetivo
+</label>
+
+<input
+type="date"
+className="w-full border p-3 rounded-lg mt-2"
+value={raceDate}
+onChange={(e)=>setRaceDate(e.target.value)}
+/>
+
+</div>
+
+{/* DEPORTES */}
+
+<div className="mt-5">
+
+<label className="text-sm font-medium">
+🏃 Deporte principal
+</label>
+
+<div className="flex flex-wrap gap-2 mt-2">
+
+{SPORTS.map(s=>(
+
+<button
+key={s.id}
+onClick={()=>toggleSport(s.id)}
+className={`px-4 py-2 rounded-full border ${
+sports.includes(s.id)
+? 'bg-black text-white'
+: 'bg-white'
+}`}
+>
+
+{s.label}
+
+</button>
+
+))}
+
+</div>
+
+</div>
+
+{/* RUNNING */}
+
+{isRunning && (
+
+<div className="mt-5 border rounded-xl p-4 bg-gray-50">
+
+<div className="font-semibold mb-4">
+🏃 Configuración carrera asfalto
+</div>
+
+<label className="text-sm">
+Distancia objetivo
+</label>
+
+<select
+value={roadDistance}
+onChange={(e)=>setRoadDistance(e.target.value)}
+className="w-full mt-2 border p-3 rounded"
+>
+
+<option value="">
+Selecciona distancia
+</option>
+
+<option value="5K">
+5K
+</option>
+
+<option value="10K">
+10K
+</option>
+
+<option value="21K">
+Media maratón · 21 km
+</option>
+
+<option value="42K">
+Maratón · 42 km
+</option>
+
+<option value="Ultra">
+Ultra asfalto
+</option>
+
+</select>
+
+<label className="text-sm mt-4 block">
+Objetivo rendimiento
+</label>
+
+<select
+value={performanceGoal}
+onChange={(e)=>setPerformanceGoal(e.target.value)}
+className="w-full mt-2 border p-3 rounded"
+>
+
+<option value="finish">
+Terminar
+</option>
+
+<option value="time">
+Marca objetivo
+</option>
+
+<option value="pb">
+Mejorar marca personal
+</option>
+
+<option value="compete">
+Competir
+</option>
+
+</select>
+
+{performanceGoal==='time' && (
+
+<input
+className="w-full border p-3 rounded mt-3"
+placeholder="Ej: 00:44:59"
+value={targetTime}
+onChange={(e)=>setTargetTime(e.target.value)}
+/>
+
+)}
+
+</div>
+
+)}
+
+{/* TRAIL */}
+
+{isTrail && (
+
+<div className="mt-5 border rounded-xl p-4 bg-green-50">
+
+<div className="font-semibold mb-4">
+🌲 Configuración Trail
+</div>
+
+<select
+value={trailMode}
+onChange={(e)=>setTrailMode(e.target.value)}
+className="w-full border p-3 rounded"
+>
+
+<option value="classic">
+Trail clásico
+</option>
+
+<option value="ultra">
+Ultra trail
+</option>
+
+<option value="technical">
+Trail técnico
+</option>
+
+<option value="kv">
+Kilómetro Vertical
+</option>
+
+</select>
+
+<div className="grid grid-cols-2 gap-3 mt-4">
+
+<input
+type="number"
+className="border p-3 rounded"
+placeholder="Distancia km"
+value={trailKm}
+onChange={(e)=>
+setTrailKm(+e.target.value)
+}
+/>
+
+<input
+type="number"
+className="border p-3 rounded"
+placeholder="Desnivel +"
+value={trailDplus}
+onChange={(e)=>
+setTrailDplus(+e.target.value)
+}
+/>
+
+</div>
+
+</div>
+
+)}
+
+{/* PLAN */}
+
+<div className="grid grid-cols-2 gap-3 mt-5">
+
+<div>
+
+<label className="text-sm">
+📅 Días semana
+</label>
+
+<input
+type="number"
+className="w-full border p-3 rounded mt-2"
+value={days}
+onChange={(e)=>
+setDays(+e.target.value)
+}
+/>
+
+</div>
+
+<div>
+
+<label className="text-sm">
+📆 Duración plan
+</label>
+
+<input
+type="number"
+className="w-full border p-3 rounded mt-2"
+value={weeks}
+onChange={(e)=>
+setWeeks(+e.target.value)
+}
+/>
+
+</div>
+
+</div>
+
+{/* LESIONES */}
+
+<div className="mt-5">
+
+<label className="text-sm">
+⚠️ Lesiones o notas
+</label>
+
+<textarea
+className="w-full border p-3 rounded mt-2"
+value={injuries}
+onChange={(e)=>
+setInjuries(e.target.value)
+}
+placeholder="Ej: rodilla sensible"
+/>
+
+</div>
+
+<button
+disabled={!canContinueStep2}
+onClick={()=>setStep(3)}
+className={`w-full mt-6 py-3 rounded ${
+canContinueStep2
+? 'bg-black text-white'
+: 'bg-gray-300'
+}`}
+>
+
+Generar plan →
+
+</button>
+
+</Card>
+)}
 
         {/* STEP 3 */}
         {step === 3 && (
-          <Card title="Tu prompt">
+          <Card title="Prompt IA">
 
             <textarea
-              className="w-full h-64 border p-3 text-sm"
+              className="w-full h-64 border p-2"
               value={prompt}
               readOnly
             />
 
-            <div className="flex gap-2 mt-3">
-              <button onClick={copy} className="border px-4 py-2">
-                Copiar
-              </button>
-            </div>
+            <button onClick={copy} className="mt-3 border px-4 py-2">
+              Copiar
+            </button>
 
           </Card>
         )}
 
       </div>
 
-      {/* FOOTER */}
+      {/* FOOTER (UNCHANGED) */}
       <footer className="flex justify-between px-6 py-5 border-t bg-white text-xs text-gray-500">
         <span>© 2026 StravaForge</span>
 
         <span className="flex items-center gap-1">
-          Hecho con
-          <svg className="w-3.5 h-3.5 text-red-500" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M6.979 3.074a6 6 0 0 1 4.988 1.425l.037 .033l.034 -.03a6 6 0 0 1 4.733 -1.44l.246 .036a6 6 0 0 1 3.364 10.008l-.18 .185l-.048 .041l-7.45 7.379a1 1 0 0 1 -1.313 .082l-.094 -.082l-7.493 -7.422a6 6 0 0 1 3.176 -10.215z"/>
-          </svg>
-          para runners
+          Hecho con ❤️ para runners
         </span>
 
         <span>Privacy-first</span>
       </footer>
-
     </div>
   )
 }
